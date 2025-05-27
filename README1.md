@@ -34,7 +34,7 @@ Addresses the gap in reliable, language-accessible healthcare information in Ind
 
 ## Application Flow
 
-The following diagram illustrates the workflow of the "Thought of the Day" application:
+The following diagram illustrates the workflow of the application:
 
 ```mermaid
 graph TD
