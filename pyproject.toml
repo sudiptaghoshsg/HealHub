@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+    "scipy>=1.15.3",
+    "sounddevice>=0.5.2",
+    "wave>=0.0.2",
+]
