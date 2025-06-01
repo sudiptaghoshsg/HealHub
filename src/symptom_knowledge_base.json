@@ -1,0 +1,121 @@
+{
+  "symptoms": [
+    {
+      "symptom_name": "fever",
+      "keywords": ["temperature", "pyrexia", "hot", "febrile"],
+      "follow_up_questions": [
+        "How long have you had the fever?",
+        "What is your temperature, if you've measured it?",
+        "Are there any other symptoms accompanying the fever?"
+      ],
+      "basic_triage_points": [
+        "Fever lasting more than 3 days warrants attention.",
+        "A temperature above 103°F (39.4°C) is a significant concern.",
+        "Fever with confusion, stiff neck, or difficulty breathing needs immediate medical evaluation."
+      ]
+    },
+    {
+      "symptom_name": "cough",
+      "keywords": ["coughing", "hacking", "whooping"],
+      "follow_up_questions": [
+        "How long have you been coughing?",
+        "Is the cough dry or are you coughing up phlegm? If phlegm, what color is it?",
+        "Do you have any other symptoms like shortness of breath or chest pain?"
+      ],
+      "basic_triage_points": [
+        "A cough lasting more than 2-3 weeks should be checked by a doctor.",
+        "Coughing up blood is an urgent medical sign.",
+        "Cough accompanied by wheezing or severe shortness of breath requires prompt attention."
+      ]
+    },
+    {
+      "symptom_name": "headache",
+      "keywords": ["head pain", "migraine", "cephalalgia"],
+      "follow_up_questions": [
+        "Can you describe the location and type of pain (e.g., throbbing, sharp, dull)?",
+        "How long has the headache lasted, and is it constant or intermittent?",
+        "Are there any other symptoms like vision changes, nausea, or sensitivity to light/sound?"
+      ],
+      "basic_triage_points": [
+        "A sudden, severe headache (often described as 'the worst headache of your life') is an emergency.",
+        "Headache accompanied by fever, stiff neck, confusion, or seizures requires immediate medical attention.",
+        "Frequent or worsening headaches should be discussed with a healthcare provider."
+      ]
+    },
+    {
+      "symptom_name": "stomach ache",
+      "keywords": ["abdominal pain", "pet dard", "gastric pain", "belly ache", "gas", "acidity", "heartburn"],
+      "follow_up_questions": [
+        "Where exactly in your stomach do you feel the pain?",
+        "Can you describe the pain? Is it cramping, burning, sharp, or dull?",
+        "Have you experienced any bloating, excessive gas, or changes in bowel habits?",
+        "Is the pain related to eating food?"
+      ],
+      "basic_triage_points": [
+        "Severe abdominal pain that comes on suddenly needs immediate medical attention.",
+        "Pain accompanied by fever, vomiting blood, or black stools is an emergency.",
+        "Persistent acidity or heartburn despite dietary changes may require consultation."
+      ]
+    },
+    {
+      "symptom_name": "diarrhea",
+      "keywords": ["loose motions", "dast", "watery stools", "frequent stools"],
+      "follow_up_questions": [
+        "How many times have you had loose motions today?",
+        "Is there any blood or mucus in the stool?",
+        "Are you experiencing any other symptoms like fever, vomiting, or abdominal cramps?",
+        "Do you feel very weak or dehydrated (e.g., dry mouth, little urination)?"
+      ],
+      "basic_triage_points": [
+        "Diarrhea lasting more than 2-3 days, especially in children or elderly, needs medical advice.",
+        "Signs of dehydration (dry mouth, decreased urination, dizziness) with diarrhea require prompt medical attention.",
+        "Bloody diarrhea is a serious sign and needs immediate medical evaluation."
+      ]
+    },
+    {
+      "symptom_name": "vomiting",
+      "keywords": ["nausea", "puking", "ulti", "throwing up", "emesis"],
+      "follow_up_questions": [
+        "How many times have you vomited?",
+        "What does the vomit look like? Is there any blood or bile (greenish color)?",
+        "Are you able to keep any food or liquids down?",
+        "Do you have other symptoms like diarrhea, fever, or severe headache?"
+      ],
+      "basic_triage_points": [
+        "Persistent vomiting where you cannot keep liquids down can lead to dehydration and needs medical attention.",
+        "Vomiting blood or what looks like coffee grounds is an emergency.",
+        "Vomiting accompanied by severe headache, stiff neck, or confusion requires immediate medical care."
+      ]
+    },
+    {
+      "symptom_name": "skin rash",
+      "keywords": ["rash", "hives", "itchy skin", "boils", "blisters", "khujli", "चकत्ते"],
+      "follow_up_questions": [
+        "Where on your body is the rash located?",
+        "What does the rash look like (e.g., red spots, bumps, blisters)? Is it itchy or painful?",
+        "Have you recently used any new soaps, lotions, medications, or eaten new foods?",
+        "Do you have a fever or any other symptoms along with the rash?"
+      ],
+      "basic_triage_points": [
+        "A rash that spreads rapidly or covers the whole body needs medical evaluation.",
+        "A rash accompanied by fever, difficulty breathing, or swelling of the face/lips/tongue is an emergency.",
+        "Painful, blistering rashes, or rashes that look infected (e.g., pus, increasing redness) should be seen by a doctor."
+      ]
+    },
+    {
+      "symptom_name": "joint pain",
+      "keywords": ["arthritis", "gathiya", "joint swelling", "sore joints", "jodo ka dard"],
+      "follow_up_questions": [
+        "Which joints are affected? Is it one joint or multiple joints?",
+        "Is there any swelling, redness, or warmth around the painful joint(s)?",
+        "Is the pain worse at certain times of the day, like in the morning or after activity?",
+        "Have you had any recent injury, fever, or rash?"
+      ],
+      "basic_triage_points": [
+        "Sudden, severe joint pain, especially with inability to move the joint or bear weight, needs medical attention.",
+        "Joint pain accompanied by fever and rash can be indicative of certain infections (e.g., dengue, chikungunya) and should be evaluated.",
+        "Persistent or worsening joint pain, especially with swelling, should be discussed with a doctor."
+      ]
+    }
+  ]
+}

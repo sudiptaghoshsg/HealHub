@@ -20,13 +20,25 @@ except ImportError:
     class SarvamSTTIntegration: # Mock STT
         def transcribe_audio(self, audio_data, sample_rate, source_language="hi-IN"):
             print(f"Mock STT: Transcribing with lang {source_language}")
+            # Allow dynamic input for testing different scenarios, including symptom queries
+            default_query_hi = "मुझे दो दिन से बुखार और खांसी है"
+            default_query_en = "I have fever and cough for two days"
+            default_query = default_query_hi if source_language == 'hi-IN' else default_query_en
+
+            test_query = input(f"🎤 Enter mock user query (or press Enter for default '{default_query}'): ")
+            if test_query.strip():
+                print(f"   Using user-provided mock query: '{test_query}'")
+                return {"transcription": test_query, "confidence": 0.95}
+
             if source_language == "hi-IN":
-                return {"transcription": "मुझे दो दिन से बुखार और खांसी है", "confidence": 0.9}
-            return {"transcription": "I have fever and cough for two days", "confidence": 0.9}
+                return {"transcription": default_query_hi, "confidence": 0.9} # Default symptom query
+            return {"transcription": default_query_en, "confidence": 0.9} # Default symptom query
 
 
 from src.nlu_processor import SarvamMNLUProcessor, NLUResult, HealthIntent
 from src.response_generator import HealHubResponseGenerator
+from src.symptom_checker import SymptomChecker
+import json
 
 def run_healhub_voice_app():
     """
@@ -92,19 +104,66 @@ def run_healhub_voice_app():
         print(f"   Is Emergency (NLU): {nlu_output.is_emergency}")
         print(f"   Detected Language (NLU): {nlu_output.language_detected}")
 
+        # --- Symptom Checker or Standard Response Flow ---
+        if nlu_output.intent == HealthIntent.SYMPTOM_QUERY and not nlu_output.is_emergency:
+            # Symptom Checker Flow
+            print("\n🩺 Activating Symptom Checker...")
+            # api_key is available from earlier in the function
+            symptom_checker = SymptomChecker(nlu_result=nlu_output, api_key=api_key)
+            symptom_checker.prepare_follow_up_questions()
 
-        # --- Response Generation Step ---
-        print("\n💬 Generating response...")
-        final_response = response_gen.generate_response(transcribed_text, nlu_output)
-        
-        print("\n\n💡 HealHub Assistant Says:")
-        print("--------------------------------------------------")
-        print(final_response)
-        print("--------------------------------------------------")
+            # Interactive Question-Answering Loop (Simulated for CLI)
+            next_question_data = symptom_checker.get_next_question()
+            while next_question_data:
+                symptom_name_for_prompt = next_question_data['symptom_name']
+                question_text_for_prompt = next_question_data['question']
 
-        # --- TTS Step (Placeholder) ---
-        print("\n🗣️ (TTS Placeholder: Speaking response...)")
-        # tts_service.speak(final_response, language=nlu_output.language_detected)
+                user_answer = ""
+                # Basic validation: ensure answer is not empty
+                while not user_answer.strip():
+                    prompt_message = f"🎤 HealHub (follow-up for {symptom_name_for_prompt}): {question_text_for_prompt}\nYour answer: "
+                    user_answer = input(prompt_message)
+                    if not user_answer.strip():
+                        print("An answer is required to proceed.")
+
+                symptom_checker.record_answer(
+                    symptom_name=symptom_name_for_prompt,
+                    question_asked=question_text_for_prompt,
+                    user_answer=user_answer
+                )
+                next_question_data = symptom_checker.get_next_question()
+
+            print("\n🔬 Generating preliminary assessment based on symptoms...")
+            assessment_result = symptom_checker.generate_preliminary_assessment()
+
+            final_response_str = json.dumps(assessment_result, indent=2, ensure_ascii=False)
+
+            print("\n\n💡 HealHub Assistant Says (Symptom Assessment):")
+            print("--------------------------------------------------")
+            print(final_response_str)
+            print("--------------------------------------------------")
+            # TTS step would need to handle this structured response or a summarized version
+            print("\n🗣️ (TTS Placeholder: Speaking assessment summary or key points...)")
+            # summary_for_tts = assessment_result.get("assessment_summary", "Please review the detailed assessment.")
+            # if "recommended_next_steps" in assessment_result:
+            #    summary_for_tts += " Key recommendation: " + assessment_result["recommended_next_steps"].split('\n')[0]
+            # print(f"\n🗣️ (TTS Placeholder: Speaking: {summary_for_tts})")
+            # # tts_service.speak(summary_for_tts, language=nlu_output.language_detected)
+
+        else:
+            # Original flow for non-symptom queries or emergencies
+            print("\n💬 Generating response using HealHubResponseGenerator...")
+            # response_gen is initialized from earlier in the function
+            final_response_str = response_gen.generate_response(transcribed_text, nlu_output)
+
+            print("\n\n💡 HealHub Assistant Says:")
+            print("--------------------------------------------------")
+            print(final_response_str)
+            print("--------------------------------------------------")
+
+            # --- TTS Step (Placeholder) ---
+            # print(f"\n🗣️ (TTS Placeholder: Speaking response: {final_response_str})")
+            # # tts_service.speak(final_response_str, language=nlu_output.language_detected)
 
     except Exception as e:
         print(f"\n❌ An unexpected error occurred in the main application: {e}")
