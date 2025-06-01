@@ -9,5 +9,6 @@ dependencies = [
     "requests>=2.32.3",
     "scipy>=1.15.3",
     "sounddevice>=0.5.2",
+    "streamlit>=1.45.1",
     "wave>=0.0.2",
 ]

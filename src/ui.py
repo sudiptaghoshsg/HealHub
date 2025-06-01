@@ -27,9 +27,9 @@ SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 # --- Session State Initialization ---
 if 'conversation' not in st.session_state:
     st.session_state.conversation = []
-if 'current_language_display' not in st.session_state:
+if 'current_language_display' not in st.session_state: 
     st.session_state.current_language_display = 'English'
-if 'current_language_code' not in st.session_state:
+if 'current_language_code' not in st.session_state: 
     st.session_state.current_language_code = 'en-IN'
 if 'text_query_input_area' not in st.session_state:
     st.session_state.text_query_input_area = ""
@@ -45,8 +45,8 @@ if 'pending_symptom_question_data' not in st.session_state:
 # Voice Input states
 if 'voice_input_stage' not in st.session_state:
     # Stages: None, "arming", "recording", "transcribing", "processing_stt"
-    st.session_state.voice_input_stage = None
-if 'audio_capturer' not in st.session_state:
+    st.session_state.voice_input_stage = None 
+if 'audio_capturer' not in st.session_state: 
     st.session_state.audio_capturer = None
 if 'captured_audio_data' not in st.session_state:
     st.session_state.captured_audio_data = None
@@ -61,7 +61,7 @@ DISPLAY_LANGUAGES = list(LANGUAGE_MAP.keys())
 def add_message_to_conversation(role: str, content: str, lang_code: Optional[str] = None):
     message = {"role": role, "content": content}
     if lang_code and role == "user":
-        message["lang"] = lang_code
+        message["lang"] = lang_code 
     st.session_state.conversation.append(message)
 
 def process_and_display_response(user_query_text: str, lang_code: str):
@@ -76,7 +76,7 @@ def process_and_display_response(user_query_text: str, lang_code: str):
     try:
         # User message is now added *before* calling this function for both text and voice.
         # So, this function should not add the user message again.
-
+        
         with st.spinner("🧠 Thinking..."):
             nlu_output: NLUResult = nlu_processor.process_transcription(user_query_text, source_language=lang_code)
             if nlu_output.intent == HealthIntent.SYMPTOM_QUERY and not nlu_output.is_emergency:
@@ -108,7 +108,7 @@ def handle_follow_up_answer(answer_text: str):
     if st.session_state.symptom_checker_instance and st.session_state.pending_symptom_question_data:
         # Add user's follow-up answer to conversation log
         add_message_to_conversation("user", answer_text, lang_code=st.session_state.current_language_code.split('-')[0])
-
+        
         question_asked = st.session_state.pending_symptom_question_data['question']
         symptom_name = st.session_state.pending_symptom_question_data['symptom_name']
         with st.spinner("Recording answer..."):
@@ -120,10 +120,38 @@ def handle_follow_up_answer(answer_text: str):
             add_message_to_conversation("assistant", f"Regarding {symptom_context}: {question_to_ask}")
         else:
             generate_and_display_assessment()
-    else:
+    else: 
         st.warning("No pending question to answer or symptom checker not active.")
         st.session_state.symptom_checker_active = False
     st.session_state.voice_input_stage = None # Reset voice stage
+
+# New callback function for text submission
+def handle_text_submission():
+    user_input = st.session_state.text_query_input_area # Read from session state key
+    current_lang_code = st.session_state.current_language_code
+
+    if not user_input: # Do nothing if input is empty
+        return
+
+    # Add the current user input to conversation log REGARDLESS of whether it's new or follow-up
+    add_message_to_conversation("user", user_input, lang_code=current_lang_code.split('-')[0])
+
+    if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data:
+        # handle_follow_up_answer will process the answer.
+        # It should NOT add the user message again as it's already added above.
+        handle_follow_up_answer(user_input) 
+    else: 
+        if st.session_state.symptom_checker_active: # Reset if symptom checker was active but no pending q
+             st.session_state.symptom_checker_active = False 
+             st.session_state.symptom_checker_instance = None
+             st.session_state.pending_symptom_question_data = None
+        # process_and_display_response will process the new query.
+        # It should NOT add the user message again.
+        process_and_display_response(user_input, current_lang_code)
+    
+    st.session_state.text_query_input_area = "" # Clear the text area state for next render
+    # No explicit st.rerun() here, on_click handles it for buttons.
+    # If called from a non-button context that needs immediate UI update, rerun might be needed.
 
 def generate_and_display_assessment():
     if st.session_state.symptom_checker_instance:
@@ -135,10 +163,13 @@ def generate_and_display_assessment():
                 assessment_str += f"**Suggested Severity:** {assessment.get('suggested_severity', 'N/A')}\n\n"
                 assessment_str += "**Recommended Next Steps:**\n"
                 next_steps = assessment.get('recommended_next_steps', 'N/A')
-                if isinstance(next_steps, list):
+                if isinstance(next_steps, list): 
                     for step in next_steps: assessment_str += f"- {step}\n"
-                elif isinstance(next_steps, str):
-                     assessment_str += f"{next_steps.replace('. ', '.\n- ').strip().lstrip('- ')}\n"
+                elif isinstance(next_steps, str): # This is the block to modify
+                    # Replace the original problematic f-string line here
+                    temp_steps = next_steps.replace('. ', '.\n- ') 
+                    temp_steps = temp_steps.strip().lstrip('- ')    
+                    assessment_str += f"{temp_steps}\n"
                 else: assessment_str += "- N/A\n"
                 warnings = assessment.get('potential_warnings')
                 if warnings and isinstance(warnings, list) and len(warnings) > 0 :
@@ -172,7 +203,7 @@ def main_ui():
     if st.session_state.voice_input_stage == "recording":
         st.info("🔴 Recording audio... Speak now. Silence or the 'Stop' button will end recording.", icon="🎤")
 
-    if not SARVAM_API_KEY:
+    if not SARVAM_API_KEY: 
         st.error("🚨 SARVAM_API_KEY not found. Please set it in your .env file for the application to function.")
         st.stop()
 
@@ -180,12 +211,12 @@ def main_ui():
         "Select Language / भाषा चुनें / ভাষা নির্বাচন করুন / भाषा निवडा:",
         options=DISPLAY_LANGUAGES,
         index=DISPLAY_LANGUAGES.index(st.session_state.current_language_display),
-        key='language_selector_widget'
+        key='language_selector_widget' 
     )
     if selected_lang_display != st.session_state.current_language_display:
         st.session_state.current_language_display = selected_lang_display
         st.session_state.current_language_code = LANGUAGE_MAP[selected_lang_display]
-        st.session_state.conversation = []
+        st.session_state.conversation = [] 
         st.session_state.symptom_checker_active = False; st.session_state.symptom_checker_instance = None; st.session_state.pending_symptom_question_data = None
         st.session_state.voice_input_stage = None
         st.rerun()
@@ -193,7 +224,7 @@ def main_ui():
     current_lang_code_for_query = st.session_state.current_language_code
 
     st.markdown("### Conversation")
-    chat_container = st.container(height=500)
+    chat_container = st.container(height=500) 
     with chat_container:
         for msg_data in st.session_state.conversation:
             role = msg_data.get("role", "system"); content = msg_data.get("content", "")
@@ -203,67 +234,70 @@ def main_ui():
                     lang_display = msg_data.get('lang', st.session_state.current_language_code.split('-')[0])
                     st.markdown(f"{content} *({lang_display})*")
             else:
-                 with st.chat_message(role, avatar=avatar if role=="assistant" else "ℹ️"): st.markdown(content)
+                 with st.chat_message(role, avatar=avatar if role=="assistant" else "ℹ️"): st.markdown(content) 
 
     st.markdown("---")
     is_recording = st.session_state.voice_input_stage == "recording"
     input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
-
-    user_query_text_from_area = st.text_area(input_label, height=100, key="text_query_input_area", disabled=is_recording)
-
-    col1, col2 = st.columns([3,1])
+    
+    # Text area widget - its current value is stored in st.session_state.text_query_input_area due to its key
+    st.text_area(input_label, height=100, key="text_query_input_area", disabled=is_recording)
+    
+    col1, col2 = st.columns([3,1]) 
     with col1:
-        send_button = st.button("✉️ Send", use_container_width=True, key="send_button_widget", disabled=is_recording)
+        # Send button now uses the on_click callback
+        st.button(
+            "✉️ Send", 
+            use_container_width=True, 
+            key="send_button_widget", # Key can be kept if useful for other logic, or removed
+            disabled=is_recording,
+            on_click=handle_text_submission # Assign the callback
+        )
     with col2:
         record_voice_button_text = "🔴 Stop & Process" if is_recording else "🎤 Record Voice"
         record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
 
-    # --- Voice Input Logic ---
-    if record_voice_button:
-        if is_recording: # Button acts as Stop
+    # --- Voice Input Logic (remains largely the same, but text submission is handled by callback) ---
+    if record_voice_button: # This handles the click of the voice button
+        if is_recording: 
             if st.session_state.audio_capturer:
-                st.session_state.audio_capturer.stop_recording()
-            st.session_state.voice_input_stage = "transcribing"
+                st.session_state.audio_capturer.stop_recording() 
+            st.session_state.voice_input_stage = "transcribing" 
             st.rerun()
-        else: # Button acts as Start
+        else: 
             st.session_state.voice_input_stage = "recording"
-            st.session_state.captured_audio_data = None
-            if st.session_state.audio_capturer is None: # Initialize if not already
-                 st.session_state.audio_capturer = CleanAudioCapture(sample_rate=16000) # Default sample rate
+            st.session_state.captured_audio_data = None 
+            if st.session_state.audio_capturer is None: 
+                 st.session_state.audio_capturer = CleanAudioCapture(sample_rate=16000)
             try:
                 st.session_state.audio_capturer.start_recording()
-                # Add system message only if not already present or last message isn't this one
                 if not st.session_state.conversation or st.session_state.conversation[-1].get("content") != "🎤 Voice recording started... Speak now. Silence will stop it, or click 'Stop & Process'.":
                     add_message_to_conversation("system", "🎤 Voice recording started... Speak now. Silence will stop it, or click 'Stop & Process'.")
             except Exception as e:
                 st.error(f"Failed to start recording: {e}. Ensure microphone is connected and permissions are granted.")
-                # Standardized error message
                 add_message_to_conversation("system", f"Error: Could not start voice recording. Please check microphone permissions. (Details: {e})")
                 st.session_state.voice_input_stage = None
             st.rerun()
 
+    # State machine for voice processing (remains the same)
     if st.session_state.voice_input_stage == "recording":
         if st.session_state.audio_capturer and not st.session_state.audio_capturer.is_recording:
             st.session_state.voice_input_stage = "transcribing"
             st.rerun()
         else:
-            time.sleep(0.1)
-            if st.session_state.audio_capturer and not st.session_state.audio_capturer.is_recording:
+            time.sleep(0.1) 
+            if st.session_state.audio_capturer and not st.session_state.audio_capturer.is_recording: # Check again
                  st.session_state.voice_input_stage = "transcribing"
-            st.rerun() # Continuously rerun to check VAD status and keep UI responsive
+            st.rerun() 
 
     if st.session_state.voice_input_stage == "transcribing":
         cleaned_audio = None
         if st.session_state.audio_capturer:
             cleaned_audio = st.session_state.audio_capturer.get_cleaned_audio()
-            # Don't nullify audio_capturer here if you want to reuse the instance.
-            # Or, ensure it's re-initialized safely if set to None.
-            # For simplicity, let's assume it can be reused or re-initialized if needed.
-
-        if cleaned_audio is not None and len(cleaned_audio) > 0: # Check if audio data is substantial
+        if cleaned_audio is not None and len(cleaned_audio) > 0:
             if not st.session_state.conversation or st.session_state.conversation[-1].get("content") != "🎙️ Audio captured. Transcribing...":
                 add_message_to_conversation("system", "🎙️ Audio captured. Transcribing...")
-            st.session_state.captured_audio_data = cleaned_audio
+            st.session_state.captured_audio_data = cleaned_audio 
             st.session_state.voice_input_stage = "processing_stt"
         else:
             add_message_to_conversation("system", "⚠️ No valid audio captured or VAD stopped too early. Please try again.")
@@ -272,57 +306,31 @@ def main_ui():
 
     if st.session_state.voice_input_stage == "processing_stt":
         if st.session_state.captured_audio_data is not None:
-            stt_service = SarvamSTTIntegration(api_key=SARVAM_API_KEY) # Initialize STT service
-            lang_for_stt = st.session_state.current_language_code
+            stt_service = SarvamSTTIntegration(api_key=SARVAM_API_KEY)
+            lang_for_stt = st.session_state.current_language_code 
             try:
                 with st.spinner("Transcribing audio..."):
                     stt_result = stt_service.transcribe_audio(
-                        st.session_state.captured_audio_data,
-                        sample_rate=16000,
-                        source_language=lang_for_stt
+                        st.session_state.captured_audio_data, sample_rate=16000, source_language=lang_for_stt
                     )
                 transcribed_text = stt_result.get("transcription")
                 if transcribed_text and transcribed_text.strip():
-                    # Add the transcribed text as a user message first
                     add_message_to_conversation("user", transcribed_text, lang_code=lang_for_stt.split('-')[0])
-                    # Then process this text
-                    process_and_display_response(transcribed_text, lang_for_stt)
+                    process_and_display_response(transcribed_text, lang_for_stt) 
                 else:
                     add_message_to_conversation("system", "⚠️ STT failed to transcribe audio or returned empty. Please try again.")
             except Exception as e:
                 st.error(f"STT Error: {e}")
-                # Standardized error message
                 add_message_to_conversation("system", f"Sorry, an error occurred during voice transcription. Please try again. (Details: {e})")
-
-            st.session_state.captured_audio_data = None
-            st.session_state.voice_input_stage = None # Reset stage; process_and_display_response might set new states
+            st.session_state.captured_audio_data = None 
+            st.session_state.voice_input_stage = None 
             st.rerun()
-        else:
+        else: 
             st.session_state.voice_input_stage = None
             st.rerun()
 
-    if send_button and user_query_text_from_area:
-        # Add user's text input to conversation first
-        add_message_to_conversation("user", user_query_text_from_area, lang_code=current_lang_code_for_query.split('-')[0])
-
-        if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data:
-            # For follow-up, the `handle_follow_up_answer` expects the answer text directly.
-            # The user message has already been added above.
-            # We need to ensure `handle_follow_up_answer` doesn't *also* add it.
-            # The current `handle_follow_up_answer` adds the message, so we adjust.
-            # Let's modify `handle_follow_up_answer` to NOT add the message, assuming it's added before call.
-            handle_follow_up_answer(user_query_text_from_area) # Pass the text
-        else:
-            if st.session_state.symptom_checker_active:
-                 st.session_state.symptom_checker_active = False
-                 st.session_state.symptom_checker_instance = None
-                 st.session_state.pending_symptom_question_data = None
-            # User message already added above, now process it.
-            process_and_display_response(user_query_text_from_area, current_lang_code_for_query)
-
-        st.session_state.text_query_input_area = ""
-        st.rerun()
+    # The old `if send_button and user_query_text_from_area:` block is now removed,
+    # as its logic is handled by the handle_text_submission callback.
 
 if __name__ == "__main__":
     main_ui()
-```

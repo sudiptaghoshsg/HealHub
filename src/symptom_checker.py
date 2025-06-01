@@ -409,5 +409,3 @@ if __name__ == '__main__':
 
     else:
         print("❌ Symptom checker could not be initialized properly due to KB loading issues.")
-
-```
