@@ -25,44 +25,6 @@ Key challenges in the Indian healthcare landscape include a skewed doctor-patien
     - **Text-to-Speech (TTS)**: For synthesizing voice output from the generated text responses in a natural-sounding Indian voice.
     - **Large Language Model (Sarvam-M)**: For Natural Language Understanding (NLU) to interpret user queries, and for generating responses through sophisticated prompt engineering techniques. Sarvam-M's capabilities in handling Indian languages and generating contextually relevant, conversational text are key to the application's core logic, including symptom assessment summaries and general health information.
 
-## Setup
-
-1. Install dependencies: `pip install -r requirements.txt`
-2. Create a `.env` file with `SARVAM_API_KEY=your_actual_api_key_here` (obtainable from Sarvam AI dashboard).
-3. Run: `python main.py` (if `main.py` is the primary execution script)
-4. Run the Streamlit UI (if applicable): `streamlit run src/ui.py`
-
-## Project Structure
-
-- `src/`: Contains the core application logic.
-    - `main.py`: Main application script to run the voice-based Q&A.
-    - `nlu_processor.py`: Handles Natural Language Understanding using Sarvam-M.
-    - `response_generator.py`: Generates responses for standard queries using prompt engineering with Sarvam-M, guided by NLU output.
-    - `symptom_checker.py`: Module for interactive symptom analysis and assessment generation.
-    - `symptom_knowledge_base.json`: Configuration file for symptoms, keywords, and follow-up questions.
-    - `audio_capture.py`: (Placeholder/Actual) For audio input and STT integration.
-    - `tts_service.py`: (Placeholder/Actual) For Text-to-Speech integration.
-- `tests/`: Unit tests for various components.
-    - `test_nlu.py`: Unit tests for the NLU processor.
-    - `test_symptom_checker.py`: Unit tests for the SymptomChecker class.
-- `.env`: Stores API keys and other environment variables (not tracked by Git).
-- `requirements.txt`: Lists project dependencies.
-- `README.md`: This file.
-
-## Symptom Checker and Triage
-
-The application includes an interactive symptom checker to help users understand potential implications of their symptoms and receive general guidance.
-
-**How it works:**
-1.  **Activation**: If the NLU module identifies a user's query as relating to symptoms (e.g., "I have a fever and a cough"), the Symptom Checker is activated.
-2.  **Interactive Q&A**: The checker may ask a series of follow-up questions based on the initially reported symptoms. These questions are drawn from the `symptom_knowledge_base.json` file. This step is interactive, requiring further voice input from the user for each question.
-3.  **Preliminary Assessment**: Once sufficient information is gathered, the Symptom Checker generates a preliminary assessment. This involves:
-    *   Sending the collected symptom details (initial query + answers to follow-ups) to the Sarvam-M model for a summarized interpretation and suggested next steps.
-    *   Augmenting this with relevant `basic_triage_points` from the `symptom_knowledge_base.json`.
-4.  **Output**: The user receives this assessment, which includes a summary, suggested severity, recommended general next steps, potential warnings, and relevant triage points from the knowledge base.
-
-**Important Disclaimer**: The information provided by the symptom checker is for general guidance only and is **not a medical diagnosis**. Users are always advised to consult a qualified healthcare professional for any health concerns or before making any decisions related to their health. This disclaimer is consistently provided with any assessment.
-
 ## Application Flow
 
 The following diagram illustrates the workflow of the application:
@@ -72,7 +34,7 @@ graph TD
     A[User Voice Input] --> B[STT Engine]
     B --> C[Text Query]
     C --> D[Sarvam-M: NLU]
-
+    
     subgraph Symptom Checker Flow
         direction LR
         D --> |Intent: SYMPTOM_QUERY| SC1[Initialize SymptomChecker]
@@ -82,7 +44,7 @@ graph TD
         SC4 --> SC5[STT for Answer]
         SC5 --> SC6[Record Answer in SymptomChecker]
         SC6 --> SC2
-        SC2 -- No --> SC7[Generate Preliminary Assessment (Sarvam-M + KB Triage Points)]
+        SC2 -- No --> SC7["Generate Preliminary Assessment (Sarvam-M + KB Triage Points)"]
         SC7 --> AssessmentText[Assessment Text]
     end
 
@@ -91,7 +53,7 @@ graph TD
         D --> |Other Intents| F[Sarvam-M: Answer Generation via Prompt Engineering]
         F --> StandardText[Standard Answer Text]
     end
-
+    
     AssessmentText --> G[Safety Layer]
     StandardText --> G[Safety Layer]
     G --> |Validate/Redirect| H[TTS Engine]
@@ -115,6 +77,76 @@ The application integrates several key components to deliver a voice-based healt
 7.  **Knowledge Bases**:
     *   `symptom_knowledge_base.json`: A structured JSON file defining symptoms, keywords, follow-up questions, and basic triage points for the Symptom Checker.
 
+## Symptom Checker and Triage
+
+The application includes an interactive symptom checker to help users understand potential implications of their symptoms and receive general guidance.
+
+**How it works:**
+1.  **Activation**: If the NLU module identifies a user's query as relating to symptoms (e.g., "I have a fever and a cough"), the Symptom Checker is activated.
+2.  **Interactive Q&A**: The checker may ask a series of follow-up questions based on the initially reported symptoms. These questions are drawn from the `symptom_knowledge_base.json` file. This step is interactive, requiring further voice input from the user for each question.
+3.  **Preliminary Assessment**: Once sufficient information is gathered, the Symptom Checker generates a preliminary assessment. This involves:
+    *   Sending the collected symptom details (initial query + answers to follow-ups) to the Sarvam-M model for a summarized interpretation and suggested next steps.
+    *   Augmenting this with relevant `basic_triage_points` from the `symptom_knowledge_base.json`.
+4.  **Output**: The user receives this assessment, which includes a summary, suggested severity, recommended general next steps, potential warnings, and relevant triage points from the knowledge base.
+
+**Important Disclaimer**: The information provided by the symptom checker is for general guidance only and is **not a medical diagnosis**. Users are always advised to consult a qualified healthcare professional for any health concerns or before making any decisions related to their health. This disclaimer is consistently provided with any assessment.
+
+## Project Structure
+
+- `src/`: Contains the core application logic.
+    - `main.py`: Main application script to run the voice-based Q&A.
+    - `nlu_processor.py`: Handles Natural Language Understanding using Sarvam-M.
+    - `response_generator.py`: Generates responses for standard queries using prompt engineering with Sarvam-M, guided by NLU output.
+    - `symptom_checker.py`: Module for interactive symptom analysis and assessment generation.
+    - `symptom_knowledge_base.json`: Configuration file for symptoms, keywords, and follow-up questions.
+    - `audio_capture.py`: (Placeholder/Actual) For audio input and STT integration.
+    - `tts_service.py`: (Placeholder/Actual) For Text-to-Speech integration.
+- `tests/`: Unit tests for various components.
+    - `test_nlu.py`: Unit tests for the NLU processor.
+    - `test_symptom_checker.py`: Unit tests for the SymptomChecker class.
+- `.env`: Stores API keys and other environment variables (not tracked by Git).
+- `requirements.txt`: Lists project dependencies.
+- `README.md`: This file.
+
+## Setup and Usage
+
+### Prerequisites
+*   Ensure Python 3.8+ is installed.
+*   Clone the repository: `git clone <repository-url>` 
+*   Navigate to the project directory: `cd <repository-name>` 
+*   Create a Python virtual environment (recommended):
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+*   Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+*   Create a `.env` file in the project root. You can copy from `.env.example` if provided, or create it manually. Add your Sarvam API key:
+    ```env
+    SARVAM_API_KEY="your_actual_api_key_here"
+    ```
+    *(Obtainable from the Sarvam AI dashboard).*
+
+### Running the Application (Streamlit UI)
+The primary way to interact with the application is through the Streamlit UI.
+```bash
+streamlit run src/ui.py
+```
+Open your browser and go to `http://localhost:8501` (or the URL provided by Streamlit).
+
+### CLI Mode (Core Logic Testing)
+The `main.py` script offers a command-line interface, mainly for testing the core backend logic. It uses a mock STT by default and has limited interactivity compared to the Streamlit UI.
+```bash
+python main.py
+```
+
+### Important Notes for Voice Input:
+
+*   **Microphone Permissions**: Users will need to grant microphone permissions to their browser for the voice input feature to work.
+*   **HTTPS Required**: For browsers to allow microphone access, the application must be served over HTTPS. Streamlit Community Cloud provides this by default. If you are self-hosting in a way that results in an HTTP URL, voice input might not work on many browsers. Localhost is often an exception.
+
 ## Limitations
 
 While this application aims to provide useful healthcare information, it has several limitations:
@@ -137,52 +169,3 @@ Several enhancements could further improve the application:
 *   **UI/UX Improvements**: Enhance the Streamlit UI (if used) or develop a more robust mobile interface for wider accessibility.
 *   **Refined Prompt Engineering**: Continuously refine system prompts for both general queries and the symptom checker to improve accuracy, tone, and safety of responses.
 *   **Multi-turn Symptom Checking**: Develop a more dynamic multi-turn conversational ability for the symptom checker beyond the current scripted follow-up questions.
-
-## Hosting the Streamlit Application for Testing
-
-Once the application is set up locally, you can host the Streamlit UI for testing by others. Here are a few common methods:
-
-### Prerequisites
-
-*   A Python environment with all dependencies installed: `pip install -r requirements.txt`
-*   A valid `SARVAM_API_KEY` present in a `.env` file in the project root.
-*   For deploying to Streamlit Community Cloud: Your project should be in a public GitHub repository.
-
-### 1. Running Locally for Development
-
-This is the standard way to run the app during development:
-```bash
-streamlit run src/ui.py
-```
-Open your browser and go to `http://localhost:8501`.
-
-### 2. Accessing on Your Local Network
-
-To allow others on your same Wi-Fi or local network to access the app:
-```bash
-streamlit run src/ui.py --server.address=0.0.0.0
-```
-Streamlit will display a "Network URL" (e.g., `http://<your-local-ip>:8501`). Other devices on the same network can use this URL. Replace `<your-local-ip>` with your computer's actual local IP address (e.g., 192.168.1.100).
-
-### 3. Deploying to Streamlit Community Cloud
-
-Streamlit Community Cloud offers a free and convenient way to deploy public Streamlit applications directly from GitHub.
-
-**Steps:**
-
-1.  **GitHub Repository**: Ensure your project, including `src/ui.py`, `requirements.txt`, and any other necessary files (like `src/audio_capture.py`, `.env` for reference but DO NOT COMMIT ACTUAL SECRETS), is pushed to a public GitHub repository.
-2.  **Sign Up/Log In**: Go to [share.streamlit.io](https://share.streamlit.io/) and sign up or log in with your GitHub account.
-3.  **Deploy New App**:
-    *   Click on "New app".
-    *   Choose "From GitHub".
-    *   Select your repository, the branch (e.g., `main` or your feature branch), and set the "Main file path" to `src/ui.py`.
-4.  **Add Secrets**:
-    *   In the "Advanced settings..." section during deployment setup, you need to add your `SARVAM_API_KEY` as a secret.
-    *   The format should be: `SARVAM_API_KEY = "your_actual_api_key_value"`
-    *   Streamlit securely stores these secrets and makes them available as environment variables to your running application. **Do not commit your actual `.env` file or API keys to GitHub.**
-5.  **Deploy**: Click "Deploy!". Your application will be built and hosted on a public URL (e.g., `your-app-name.streamlit.app`).
-
-### Important Notes for Voice Input:
-
-*   **Microphone Permissions**: Users will need to grant microphone permissions to their browser for the voice input feature to work.
-*   **HTTPS Required**: For browsers to allow microphone access, the application must be served over HTTPS. Streamlit Community Cloud provides this by default. If you are self-hosting in a way that results in an HTTP URL, voice input might not work on many browsers. Localhost is often an exception.
