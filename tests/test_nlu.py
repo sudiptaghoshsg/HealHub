@@ -6,10 +6,17 @@ def test_nlu():
         
         # Test queries
         test_queries = [
-            ("मुझे बुखार और सिरदर्द है", "hi-IN"),
+            ("मुझे बुखार और सिरदर्द है", "hi-IN"), # Fever and Headache
             ("What is diabetes?", "en-IN"),
             ("chest pain emergency help", "en-IN"),
-            ("Do I have COVID?", "en-IN")
+            ("Do I have COVID?", "en-IN"),
+            ("मुझे सांस लेने में दिक्कत हो रही है और घरघराहट हो रही है", "hi-IN"), # Trouble breathing and wheezing
+            ("I have severe chest pain and difficulty breathing", "en-IN"),
+            ("আমি ঘন ঘন প্রস্রাব করছি এবং খুব তৃষ্ণার্ত অনুভব করছি", "bn-IN"),  # Frequent urination, thirst
+            ("எனக்கு வாந்தி மற்றும் வயிற்று வலி உள்ளது", "ta-IN"),  # Vomiting and stomach pain
+            ("నాకు జ్వరం మరియు శరీరంలో నొప్పి ఉంది", "te-IN"),  # Fever and body aches
+            ("ನನಗೆ ಎದೆನೋವು ಮತ್ತು ಉಸಿರಾಟದಲ್ಲಿ ತೊಂದರೆ ಇದೆ", "kn-IN"),  # Chest pain and shortness of breath
+            ("എനിക്ക് പലതവണ മൂത്രം വരുന്നു, അധികം ദാഹിക്കുന്നു", "ml-IN"),  # Frequent urination and thirst
         ]
         
         for query, lang in test_queries:
