@@ -92,6 +92,7 @@ class SarvamMNLUProcessor:
     
     def __init__(self, api_key: Optional[str] = None):
         self.sarvam_client = SarvamAPIClient(api_key)
+        self.symptom_kb = None  # For storing symptom knowledge base
         
         # Emergency keywords in multiple Indian languages
         self.emergency_keywords = {
@@ -109,7 +110,22 @@ class SarvamMNLUProcessor:
             r'\b(क्या.*बीमारी|निदान)\b',  # Hindi
             r'\b(என்ன.*நோய்|கண்டறிதல்)\b',  # Tamil
         ]
+        self._load_symptom_kb() # Load symptom knowledge base
     
+    def _load_symptom_kb(self, filepath="src/symptom_knowledge_base.json"):
+        """Loads the symptom knowledge base from a JSON file."""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                self.symptom_kb = data.get("symptoms", [])
+                print(f"✅ Symptom knowledge base loaded successfully from {filepath}.")
+        except FileNotFoundError:
+            print(f"⚠️ Symptom knowledge base file not found at {filepath}. Keyword matching will be limited.")
+            self.symptom_kb = []
+        except json.JSONDecodeError:
+            print(f"⚠️ Error decoding JSON from symptom knowledge base file at {filepath}. Keyword matching will be limited.")
+            self.symptom_kb = []
+
     def process_transcription(self, transcribed_text: str, source_language: str = "hi-IN") -> NLUResult:
         """
         Process transcribed text through Sarvam-M for NLU
@@ -179,7 +195,7 @@ class SarvamMNLUProcessor:
                 "role": "system",
                 "content": """You are a healthcare intent classifier. Classify user queries into these categories:
                 
-1. symptom_query - Questions about symptoms
+1. symptom_query - User is describing one or more physical symptoms, feelings of illness, or specific pains (e.g., 'I have a headache and fever', 'my throat hurts').
 2. disease_info - Information about diseases/conditions  
 3. medication_info - Medicine-related queries
 4. wellness_tip - Health and wellness advice
@@ -251,7 +267,7 @@ Respond ONLY with JSON format: {"intent": "category_name", "confidence": 0.95}""
                 "role": "system",
                 "content": """You are a medical entity extractor. Extract these entity types from healthcare queries:
 
-- symptoms: fever, headache, cough, pain, etc.
+- symptoms: Detailed descriptions of physical feelings or ailments like fever, headache, cough, chest pain, sore throat, body ache, nausea, dizziness, fatigue, etc. Be specific in identifying the symptom text.
 - diseases: diabetes, hypertension, covid, etc.
 - medications: paracetamol, metformin, aspirin, etc.
 - body_parts: head, chest, stomach, heart, etc.
@@ -301,6 +317,42 @@ Respond ONLY with JSON format:
                     
         except Exception as e:
             print(f"⚠️ Error in entity extraction: {e}")
+
+        # Augment with keyword matching from symptom knowledge base
+        if self.symptom_kb:
+            augmented_count = 0
+            text_lower = text.lower()
+            for symptom_data in self.symptom_kb:
+                keywords_to_check = [symptom_data["symptom_name"].lower()] + [kw.lower() for kw in symptom_data.get("keywords", [])]
+
+                for keyword in keywords_to_check:
+                    for match in re.finditer(re.escape(keyword), text_lower):
+                        start_pos, end_pos = match.span()
+
+                        # Check for overlap with existing LLM-found entities
+                        is_covered = False
+                        for existing_entity in entities:
+                            if existing_entity.entity_type == "symptom":
+                                # Simple overlap check: if keyword is within an existing symptom entity's text span
+                                if max(start_pos, existing_entity.start_pos) < min(end_pos, existing_entity.end_pos):
+                                    is_covered = True
+                                    break
+                                # Check if the existing entity text contains the keyword (more robust for partial matches by LLM)
+                                if keyword in existing_entity.text.lower():
+                                    is_covered = True
+                                    break
+
+                        if not is_covered:
+                            entities.append(MedicalEntity(
+                                text=text[start_pos:end_pos], # Use original casing from text
+                                entity_type="symptom",
+                                confidence=0.75, # Default confidence for keyword match
+                                start_pos=start_pos,
+                                end_pos=end_pos
+                            ))
+                            augmented_count += 1
+            if augmented_count > 0:
+                print(f"ℹ️ Augmented entities with {augmented_count} symptoms from keyword matching.")
             
         return entities
     
