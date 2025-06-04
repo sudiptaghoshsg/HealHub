@@ -5,6 +5,7 @@ import time # For polling audio capture status
 import numpy as np # For checking audio data (though not directly used in this version)
 from dotenv import load_dotenv
 from typing import Optional
+import re
 
 # Adjust import paths
 try:
@@ -166,9 +167,14 @@ def generate_and_display_assessment():
                 if isinstance(next_steps, list): 
                     for step in next_steps: assessment_str += f"- {step}\n"
                 elif isinstance(next_steps, str): # This is the block to modify
-                    # Replace the original problematic f-string line here
-                    temp_steps = next_steps.replace('. ', '.\n- ') 
-                    temp_steps = temp_steps.strip().lstrip('- ')    
+                    ### Replace the original problematic f-string line here
+                    # Split on punctuation marks (., !, ?) followed by whitespace
+                    sentences = re.split(r'(?<=[.!?])\s+', next_steps.strip())
+                    # Add bullet to each sentence
+                    temp_steps = '\n- '.join(sentences).strip()
+                    # remove leading bullet if present (e.g. if next_steps started with punctuation)
+                    temp_steps = temp_steps.lstrip('- ')
+                    # Append to assessment_str
                     assessment_str += f"{temp_steps}\n"
                 else: assessment_str += "- N/A\n"
                 warnings = assessment.get('potential_warnings')
