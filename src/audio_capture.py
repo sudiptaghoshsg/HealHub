@@ -1,4 +1,5 @@
 import sounddevice as sd
+import soundfile as sf
 import numpy as np
 import queue
 import threading
@@ -6,6 +7,8 @@ import time
 import wave
 from scipy import signal
 from scipy.io import wavfile
+import requests
+import io
 
 class AudioCleaner:
     """Audio processing utilities for cleaning speech audio"""
@@ -201,6 +204,7 @@ class SarvamSTTIntegration:
     
     def __init__(self, api_key=None):
         self.api_key = api_key
+        self.api_url = "https://api.sarvam.ai/speech-to-text" 
         # Note: Replace with actual Sarvam API endpoint and implementation
         
     def transcribe_audio(self, audio_data, sample_rate=16000, source_language="hi-IN"):
@@ -212,23 +216,37 @@ class SarvamSTTIntegration:
             sample_rate: Audio sample rate
             source_language: Source language code (e.g., "hi-IN", "ta-IN", etc.)
         """
-        # Convert audio to bytes for API call
-        audio_bytes = audio_data.tobytes()
         
-        # Placeholder for Sarvam API call
-        # Replace this with actual Sarvam API implementation
-        print(f"🔄 Sending {len(audio_bytes)} bytes to Sarvam Saarika v2...")
-        print(f"📝 Language: {source_language}")
-        
-        # Mock response - replace with actual API call
-        transcribed_text = "Mock transcription result"
-        confidence_score = 0.95
-        
-        return {
-            "transcription": transcribed_text,
-            "confidence": confidence_score,
-            "language_detected": source_language
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+
+        headers = {
+            "api-subscription-key": self.api_key
         }
+        files = {
+            "file": ("audio.wav", audio_buffer, "audio/wav")
+        }
+        data = {
+            "language": source_language
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, files=files, data=data, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+            transcription = result.get("transcript", "")
+            language_detected = result.get("language_code", source_language)
+            return {
+                "transcription": transcription,
+                "language_detected": language_detected
+            }
+        except requests.RequestException as e:
+            print(f"❌ Sarvam STT API call failed: {e}")
+            return {
+                "transcription": "",
+                "language_detected": source_language
+            }
 
 # Main usage example
 def main():
@@ -261,7 +279,6 @@ def main():
             )
             
             print(f"🎯 Transcription: {result['transcription']}")
-            print(f"📊 Confidence: {result['confidence']:.2%}")
             
         else:
             print("❌ No valid audio captured")

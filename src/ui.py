@@ -54,8 +54,16 @@ if 'captured_audio_data' not in st.session_state:
 
 # --- Language Mapping ---
 LANGUAGE_MAP = {
-    "English": "en-IN", "हिन्दी (Hindi)": "hi-IN", "বাংলা (Bengali)": "bn-IN", "मराठी (Marathi)": "mr-IN"
+    "English": "en-IN", 
+    "हिन्दी (Hindi)": "hi-IN", 
+    "বাংলা (Bengali)": "bn-IN", 
+    "मराठी (Marathi)": "mr-IN", 
+    "ಕನ್ನಡ (Kannada)": "kn-IN",
+    "தமிழ் (Tamil)": "ta-IN",
+    "తెలుగు (Telugu)": "te-IN",
+    "മലയാളം (Malayalam)": "ml-IN",
 }
+
 DISPLAY_LANGUAGES = list(LANGUAGE_MAP.keys())
 
 # --- Helper Functions ---
