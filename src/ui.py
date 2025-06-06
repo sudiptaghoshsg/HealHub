@@ -209,9 +209,8 @@ def generate_and_display_assessment():
 
 # --- Streamlit UI ---
 def main_ui():
-    st.set_page_config(page_title="HealHub Assistant", layout="wide")
-    st.title("💬 HealHub Assistant")
-    st.caption("Your AI healthcare companion. Supporting English, Hindi, Bengali, and Marathi.")
+    st.set_page_config(page_title="HealHub Assistant", layout="wide", initial_sidebar_state="collapsed")
+    # st.caption("Your AI healthcare companion. Supporting English and Popular Indic Languages.")
 
     # Enhanced Recording Visual Cue
     if st.session_state.voice_input_stage == "recording":
@@ -221,12 +220,18 @@ def main_ui():
         st.error("🚨 SARVAM_API_KEY not found. Please set it in your .env file for the application to function.")
         st.stop()
 
-    selected_lang_display = st.selectbox(
-        "Select Language / भाषा चुनें / ভাষা নির্বাচন করুন / भाषा निवडा:",
-        options=DISPLAY_LANGUAGES,
-        index=DISPLAY_LANGUAGES.index(st.session_state.current_language_display),
-        key='language_selector_widget' 
-    )
+    col1, col2 = st.columns([6, 6])
+    with col1:
+        st.title("💬 HealHub Assistant")
+        st.caption("Your AI healthcare companion. Supporting English and Popular Indic Languages.")
+    with col2:
+        st.markdown(f"<div style='height: 40px;'></div>", unsafe_allow_html=True)
+        selected_lang_display = st.selectbox(
+            "Select Language / भाषा चुनें / ভাষা নির্বাচন করুন / भाषा निवडा:",
+            options=DISPLAY_LANGUAGES,
+            index=DISPLAY_LANGUAGES.index(st.session_state.current_language_display),
+            key='language_selector_widget' 
+        )
     if selected_lang_display != st.session_state.current_language_display:
         st.session_state.current_language_display = selected_lang_display
         st.session_state.current_language_code = LANGUAGE_MAP[selected_lang_display]
@@ -238,7 +243,7 @@ def main_ui():
     current_lang_code_for_query = st.session_state.current_language_code
 
     st.markdown("### Conversation")
-    chat_container = st.container(height=500) 
+    chat_container = st.container(height=300) 
     with chat_container:
         for msg_data in st.session_state.conversation:
             role = msg_data.get("role", "system"); content = msg_data.get("content", "")
@@ -250,26 +255,47 @@ def main_ui():
             else:
                  with st.chat_message(role, avatar=avatar if role=="assistant" else "ℹ️"): st.markdown(content) 
 
-    st.markdown("---")
     is_recording = st.session_state.voice_input_stage == "recording"
-    input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
     
-    # Text area widget - its current value is stored in st.session_state.text_query_input_area due to its key
-    st.text_area(input_label, height=100, key="text_query_input_area", disabled=is_recording)
-    
-    col1, col2 = st.columns([3,1]) 
+    col1, col2, col3 = st.columns([10, 1, 1])
+
     with col1:
-        # Send button now uses the on_click callback
+        input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
+    
+        # Text area widget - its current value is stored in st.session_state.text_query_input_area due to its key
+        st.text_area(input_label, height=100, key="text_query_input_area", disabled=is_recording)
+        
+        # user_input = st.text_input("Type your query or use voice:", key="user_input")
+
+    with col2:
+        st.markdown(f"<div style='height: 55px;'></div>", unsafe_allow_html=True)
         st.button(
-            "✉️ Send", 
+            "📤 Send", 
             use_container_width=True, 
             key="send_button_widget", # Key can be kept if useful for other logic, or removed
             disabled=is_recording,
             on_click=handle_text_submission # Assign the callback
         )
-    with col2:
-        record_voice_button_text = "🔴 Stop & Process" if is_recording else "🎤 Record Voice"
+
+    with col3:
+        st.markdown(f"<div style='height: 55px;'></div>", unsafe_allow_html=True)
+        record_voice_button_text = "🔴" if is_recording else "🎤"
         record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
+
+
+    # col1, col2 = st.columns([3,1]) 
+    # with col1:
+    #     # Send button now uses the on_click callback
+    #     st.button(
+    #         "✉️ Send", 
+    #         use_container_width=True, 
+    #         key="send_button_widget", # Key can be kept if useful for other logic, or removed
+    #         disabled=is_recording,
+    #         on_click=handle_text_submission # Assign the callback
+    #     )
+    # with col2:
+    #     record_voice_button_text = "🔴 Stop & Process" if is_recording else "🎤 Record Voice"
+    #     record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
 
     # --- Voice Input Logic (remains largely the same, but text submission is handled by callback) ---
     if record_voice_button: # This handles the click of the voice button
