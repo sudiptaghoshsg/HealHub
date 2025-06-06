@@ -283,20 +283,6 @@ def main_ui():
         record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
 
 
-    # col1, col2 = st.columns([3,1]) 
-    # with col1:
-    #     # Send button now uses the on_click callback
-    #     st.button(
-    #         "✉️ Send", 
-    #         use_container_width=True, 
-    #         key="send_button_widget", # Key can be kept if useful for other logic, or removed
-    #         disabled=is_recording,
-    #         on_click=handle_text_submission # Assign the callback
-    #     )
-    # with col2:
-    #     record_voice_button_text = "🔴 Stop & Process" if is_recording else "🎤 Record Voice"
-    #     record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
-
     # --- Voice Input Logic (remains largely the same, but text submission is handled by callback) ---
     if record_voice_button: # This handles the click of the voice button
         if is_recording: 
