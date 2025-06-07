@@ -257,7 +257,9 @@ def main_ui():
 
     is_recording = st.session_state.voice_input_stage == "recording"
     
-    col1, col2, col3 = st.columns([10, 1, 1])
+    # Define column width ratios for the input area, send button, and voice recording button
+    COLUMN_WIDTHS = [10, 1, 1]
+    col1, col2, col3 = st.columns(COLUMN_WIDTHS)
 
     with col1:
         input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
