@@ -1,4 +1,5 @@
 import sounddevice as sd
+import soundfile as sf
 import numpy as np
 import queue
 import threading
@@ -6,6 +7,8 @@ import time
 import wave
 from scipy import signal
 from scipy.io import wavfile
+import requests
+import io
 
 class AudioCleaner:
     """Audio processing utilities for cleaning speech audio"""
@@ -70,20 +73,43 @@ class AudioCleaner:
         return enhanced_audio
 
 class CleanAudioCapture:
-    def __init__(self, sample_rate=16000, channels=1, dtype=np.int16):
-        self.sample_rate = sample_rate
+    def __init__(self, sample_rate=48000, channels=1, dtype=np.int16):
+        print("Initializing CleanAudioCapture with parameters:")
+        print(f"- Sample rate: {sample_rate}")
+        print(f"- Channels: {channels}")
+        print(f"- Data type: {dtype}")
+        
+        # Query supported sample rates for devices
+        try:
+            devices = sd.query_devices()
+            print("\nAvailable audio devices and their supported sample rates:")
+            for i, device in enumerate(devices):
+                if device['max_input_channels'] > 0:  # Only show input devices
+                    try:
+                        supported_rates = sd.query_devices(device=i)['default_samplerate']
+                        print(f"{i}: {device['name']} (in={device['max_input_channels']}, out={device['max_output_channels']})")
+                        print(f"   Supported sample rate: {supported_rates} Hz")
+                    except Exception as e:
+                        print(f"{i}: {device['name']} - Error querying sample rate: {e}")
+        except Exception as e:
+            print(f"Error querying audio devices: {e}")
+        
+        # Use a standard sample rate that's widely supported
+        self.sample_rate = 48000  # Most devices support 44.1kHz
         self.channels = channels
         self.dtype = dtype
         self.audio_queue = queue.Queue()
         self.is_recording = False
         self.cleaner = AudioCleaner()
         
-        # Voice activity detection parameters
-        self.voice_threshold = 0.02
-        self.silence_duration = 2.0  # seconds
+        # Voice activity detection parameters - adjusted for better sensitivity
+        self.voice_threshold = 0.01  # Lowered threshold for better voice detection
+        self.silence_duration = 3.0  # Increased silence duration
         self.last_voice_time = time.time()
         self.voice_detected = False
-        
+        self.total_frames_processed = 0
+        self.voice_frames_detected = 0
+
     def audio_callback(self, indata, frames, time, status):
         """Callback function for audio input with voice activity detection"""
         if status:
@@ -91,12 +117,20 @@ class CleanAudioCapture:
         
         # Calculate volume (RMS) for voice activity detection
         volume = np.sqrt(np.mean(indata**2))
+        self.total_frames_processed += 1
+        
+        # Log volume levels periodically
+        if self.total_frames_processed % 100 == 0:
+            print(f"Current volume level: {volume:.6f} (threshold: {self.voice_threshold})")
         
         # Voice activity detection
         if volume > self.voice_threshold:
             self.voice_detected = True
+            self.voice_frames_detected += 1
             self.last_voice_time = time.inputBufferAdcTime
-            
+            if self.voice_frames_detected % 100 == 0:
+                print(f"Voice detected! Volume: {volume:.6f}")
+        
         # Add audio to queue if voice is detected
         if self.voice_detected:
             audio_data = (indata * 32767).astype(self.dtype)
@@ -106,26 +140,52 @@ class CleanAudioCapture:
         current_time = time.inputBufferAdcTime
         if (current_time - self.last_voice_time) > self.silence_duration:
             if self.voice_detected:
-                print("Silence detected, processing audio...")
+                print(f"Silence detected after {self.voice_frames_detected} voice frames. Processing audio...")
                 self.stop_recording()
     
     def start_recording(self):
         """Start real-time audio capture with voice activity detection"""
+        print("\nStarting audio recording...")
         self.is_recording = True
         self.voice_detected = False
         self.last_voice_time = time.time()
+        self.total_frames_processed = 0
+        self.voice_frames_detected = 0
         
-        print("🎤 Listening for voice... Speak now!")
-        
-        self.stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype=np.float32,
-            callback=self.audio_callback,
-            blocksize=1024
-        )
-        self.stream.start()
-        
+        try:
+            print("Creating audio input stream...")
+            # Try to use the digital microphone first, fall back to stereo microphone if needed
+            try:
+                self.stream = sd.InputStream(
+                    samplerate=self.sample_rate,
+                    channels=self.channels,
+                    dtype=np.float32,
+                    callback=self.audio_callback,
+                    blocksize=1024,
+                    device=9  # Digital Microphone
+                )
+                print(f"Using Digital Microphone (device 9) at {self.sample_rate} Hz")
+            except Exception as mic_error:
+                print(f"Failed to use Digital Microphone: {mic_error}")
+                print("Trying Stereo Microphone...")
+                self.stream = sd.InputStream(
+                    samplerate=self.sample_rate,
+                    channels=self.channels,
+                    dtype=np.float32,
+                    callback=self.audio_callback,
+                    blocksize=1024,
+                    device=10  # Stereo Microphone
+                )
+                print(f"Using Stereo Microphone (device 10) at {self.sample_rate} Hz")
+            
+            print("Starting audio stream...")
+            self.stream.start()
+            print("Audio stream started successfully")
+        except Exception as e:
+            print(f"Error starting audio stream: {e}")
+            self.is_recording = False
+            raise
+    
     def stop_recording(self):
         """Stop audio capture"""
         if hasattr(self, 'stream'):
@@ -149,40 +209,33 @@ class CleanAudioCapture:
         raw_audio = self.get_raw_audio_buffer()
         
         if len(raw_audio) == 0:
+            print("No audio data in buffer")
             return np.array([])
             
-        print("🧹 Cleaning audio...")
+        print(f"Processing {len(raw_audio)} samples of audio...")
         
         # Convert to float for processing
         audio_float = raw_audio.astype(np.float32) / 32767.0
         
+        # Resample to 16kHz if needed for STT
+        if self.sample_rate != 16000:
+            print(f"Resampling from {self.sample_rate} Hz to 16000 Hz...")
+            audio_float = signal.resample(audio_float, round(len(audio_float) * 16000 / self.sample_rate))
+        
         # Step 1: Remove silence segments
         cleaned_audio = self.cleaner.remove_silence(
             audio_float, 
-            self.sample_rate,
-            silence_threshold=0.01,
+            16000,  # Use 16kHz for STT
+            silence_threshold=0.01,  # Lowered threshold
             min_silence_duration=0.3
         )
         
         if len(cleaned_audio) == 0:
-            print("⚠️ No voice detected in audio")
+            print("⚠️ No voice detected in audio after cleaning")
             return np.array([])
         
-        # Step 2: Apply noise reduction
-        cleaned_audio = self.cleaner.apply_noise_reduction(cleaned_audio, self.sample_rate)
-        
-        # Step 3: Enhance voice frequencies (optional)
-        if apply_enhancement:
-            cleaned_audio = self.cleaner.apply_voice_enhancement(cleaned_audio, self.sample_rate)
-        
-        # Step 4: Normalize audio
-        cleaned_audio = self.cleaner.normalize_audio(cleaned_audio, target_level=0.8)
-        
-        # Convert back to int16
-        cleaned_audio_int16 = (cleaned_audio * 32767).astype(np.int16)
-        
-        print(f"✅ Audio cleaned: {len(raw_audio)} → {len(cleaned_audio_int16)} samples")
-        return cleaned_audio_int16
+        print(f"Audio cleaned successfully: {len(raw_audio)} → {len(cleaned_audio)} samples")
+        return cleaned_audio
     
     def save_audio(self, audio_data, filename):
         """Save audio data to WAV file"""
@@ -201,9 +254,10 @@ class SarvamSTTIntegration:
     
     def __init__(self, api_key=None):
         self.api_key = api_key
+        self.api_url = "https://api.sarvam.ai/speech-to-text" 
         # Note: Replace with actual Sarvam API endpoint and implementation
         
-    def transcribe_audio(self, audio_data, sample_rate=16000, source_language="hi-IN"):
+    def transcribe_audio(self, audio_data, sample_rate=48000, source_language="hi-IN"):
         """
         Send cleaned audio to Sarvam's Saarika v2 for transcription
         
@@ -212,30 +266,44 @@ class SarvamSTTIntegration:
             sample_rate: Audio sample rate
             source_language: Source language code (e.g., "hi-IN", "ta-IN", etc.)
         """
-        # Convert audio to bytes for API call
-        audio_bytes = audio_data.tobytes()
         
-        # Placeholder for Sarvam API call
-        # Replace this with actual Sarvam API implementation
-        print(f"🔄 Sending {len(audio_bytes)} bytes to Sarvam Saarika v2...")
-        print(f"📝 Language: {source_language}")
-        
-        # Mock response - replace with actual API call
-        transcribed_text = "Mock transcription result"
-        confidence_score = 0.95
-        
-        return {
-            "transcription": transcribed_text,
-            "confidence": confidence_score,
-            "language_detected": source_language
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+
+        headers = {
+            "api-subscription-key": self.api_key
         }
+        files = {
+            "file": ("audio.wav", audio_buffer, "audio/wav")
+        }
+        data = {
+            "language": source_language
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, files=files, data=data, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+            transcription = result.get("transcript", "")
+            language_detected = result.get("language_code", source_language)
+            return {
+                "transcription": transcription,
+                "language_detected": language_detected
+            }
+        except requests.RequestException as e:
+            print(f"❌ Sarvam STT API call failed: {e}")
+            return {
+                "transcription": "",
+                "language_detected": source_language
+            }
 
 # Main usage example
 def main():
     """Example usage of the clean audio capture system"""
     
     # Initialize components
-    audio_capture = CleanAudioCapture(sample_rate=16000)
+    audio_capture = CleanAudioCapture(sample_rate=48000)
     stt_service = SarvamSTTIntegration()
     
     try:
@@ -261,7 +329,6 @@ def main():
             )
             
             print(f"🎯 Transcription: {result['transcription']}")
-            print(f"📊 Confidence: {result['confidence']:.2%}")
             
         else:
             print("❌ No valid audio captured")

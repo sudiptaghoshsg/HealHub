@@ -93,15 +93,8 @@ class SarvamMNLUProcessor:
     def __init__(self, api_key: Optional[str] = None):
         self.sarvam_client = SarvamAPIClient(api_key)
         self.symptom_kb = None  # For storing symptom knowledge base
-        
-        # Emergency keywords in multiple Indian languages
-        self.emergency_keywords = {
-            'en': ['emergency', 'urgent', 'chest pain', 'heart attack', 'stroke', 'bleeding', 'unconscious'],
-            'hi': ['आपातकाल', 'तुरंत', 'सीने में दर्द', 'दिल का दौरा', 'बेहोश'],
-            'ta': ['அவசரம்', 'உடனடி', 'மார்பு வலி'],
-            'te': ['అత్యవసరం', 'తక్షణం', 'ఛాతీ నొప్పి'],
-            'bn': ['জরুরি', 'তাৎক্ষণিক', 'বুকে ব্যথা'],
-        }
+        self.emergency_keywords = {} # Initialize as empty dict
+        self._load_keyword_config() # Load keywords from config file
         
         # Diagnosis request patterns
         self.diagnosis_patterns = [
@@ -111,7 +104,29 @@ class SarvamMNLUProcessor:
             r'\b(என்ன.*நோய்|கண்டறிதல்)\b',  # Tamil
         ]
         self._load_symptom_kb() # Load symptom knowledge base
-    
+
+    def _load_keyword_config(self, config_filepath="src/nlu_config.json"):
+        """Loads keyword configurations from a JSON file."""
+        try:
+            with open(config_filepath, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+                keyword_lists = config_data.get("keyword_lists", {})
+                self.emergency_keywords = keyword_lists.get("emergency_keywords", {})
+                if self.emergency_keywords:
+                    print(f"✅ Emergency keywords loaded successfully from {config_filepath}.")
+                else:
+                    print(f"⚠️ No emergency keywords found in {config_filepath} or structure is incorrect.")
+                    self.emergency_keywords = {} # Ensure it's an empty dict if not found
+        except FileNotFoundError:
+            print(f"⚠️ Keyword config file not found at {config_filepath}. Emergency keyword detection will be limited.")
+            self.emergency_keywords = {}
+        except json.JSONDecodeError:
+            print(f"⚠️ Error decoding JSON from keyword config file at {config_filepath}. Emergency keyword detection will be limited.")
+            self.emergency_keywords = {}
+        except Exception as e: # Catch any other unexpected errors during loading
+            print(f"❌ An unexpected error occurred while loading keyword config from {config_filepath}: {e}")
+            self.emergency_keywords = {}
+
     def _load_symptom_kb(self, filepath="src/symptom_knowledge_base.json"):
         """Loads the symptom knowledge base from a JSON file."""
         try:
@@ -171,12 +186,20 @@ class SarvamMNLUProcessor:
         """Detect emergency situations"""
         text_lower = text.lower()
         
-        # Check language-specific emergency keywords
         lang_code = language.split('-')[0] if '-' in language else language
-        emergency_words = self.emergency_keywords.get(lang_code, self.emergency_keywords['en'])
         
+        # Safely get default English keywords
+        default_emergency_words = self.emergency_keywords.get('en', [])
+        # Get language-specific keywords, falling back to default (English) ones
+        emergency_words = self.emergency_keywords.get(lang_code, default_emergency_words)
+        
+        # If no keywords are available (neither for the specific language nor for English fallback),
+        # then no detection can occur.
+        if not emergency_words:
+            return False
+            
         for keyword in emergency_words:
-            if keyword.lower() in text_lower:
+            if keyword.lower() in text_lower: # Ensure keyword itself is also lowercased for comparison
                 return True
                 
         return False

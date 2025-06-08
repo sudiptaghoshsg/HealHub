@@ -4,3 +4,4 @@ sounddevice
 numpy
 scipy
 requests
+soundfile
