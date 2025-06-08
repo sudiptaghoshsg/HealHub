@@ -281,7 +281,7 @@ def main_ui():
 
     with col3:
         st.markdown(f"<div style='height: 55px;'></div>", unsafe_allow_html=True)
-        record_voice_button_text = "🔴" if is_recording else "🎤"
+        record_voice_button_text = "⏹️ Stop" if st.session_state.voice_input_stage == "recording" else "🎙️ Record"
         record_voice_button = st.button(record_voice_button_text, use_container_width=True, key="record_voice_button_widget")
 
 
@@ -296,11 +296,22 @@ def main_ui():
             st.session_state.voice_input_stage = "recording"
             st.session_state.captured_audio_data = None 
             if st.session_state.audio_capturer is None: 
-                 st.session_state.audio_capturer = CleanAudioCapture(sample_rate=16000)
+                try:
+                    print("Initializing CleanAudioCapture...")
+                    st.session_state.audio_capturer = CleanAudioCapture(sample_rate=48000)
+                    print("CleanAudioCapture initialized successfully")
+                except Exception as init_error:
+                    st.error(f"Failed to initialize audio capture: {init_error}")
+                    print(f"Detailed initialization error: {init_error}")
+                    st.session_state.voice_input_stage = None
+                    st.rerun()
             try:
+                print("Starting audio recording...")
                 st.session_state.audio_capturer.start_recording()
+                print("Audio recording started successfully")
                 if not st.session_state.conversation or st.session_state.conversation[-1].get("content") != "🎤 Voice recording started... Speak now. Silence will stop it, or click 'Stop & Process'.":
                     add_message_to_conversation("system", "🎤 Voice recording started... Speak now. Silence will stop it, or click 'Stop & Process'.")
+
             except Exception as e:
                 st.error(f"Failed to start recording: {e}. Ensure microphone is connected and permissions are granted.")
                 add_message_to_conversation("system", f"Error: Could not start voice recording. Please check microphone permissions. (Details: {e})")
@@ -328,7 +339,7 @@ def main_ui():
             st.session_state.captured_audio_data = cleaned_audio 
             st.session_state.voice_input_stage = "processing_stt"
         else:
-            add_message_to_conversation("system", "⚠️ No valid audio captured or VAD stopped too early. Please try again.")
+            add_message_to_conversation("system", "⚠️ No valid audio captured. Please try again.")
             st.session_state.voice_input_stage = None
         st.rerun()
 
