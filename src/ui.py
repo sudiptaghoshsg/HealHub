@@ -143,13 +143,13 @@ def handle_text_submission():
         return
 
     # Add the current user input to conversation log REGARDLESS of whether it's new or follow-up
-    add_message_to_conversation("user", user_input, lang_code=current_lang_code.split('-')[0])
-
+    
     if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data:
         # handle_follow_up_answer will process the answer.
         # It should NOT add the user message again as it's already added above.
         handle_follow_up_answer(user_input) 
     else: 
+        add_message_to_conversation("user", user_input, lang_code=current_lang_code.split('-')[0])
         if st.session_state.symptom_checker_active: # Reset if symptom checker was active but no pending q
              st.session_state.symptom_checker_active = False 
              st.session_state.symptom_checker_instance = None
