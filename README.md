@@ -19,6 +19,14 @@ Key challenges in the Indian healthcare landscape include a skewed doctor-patien
 - Safety guardrails with disclaimers and emergency redirection.
 - Interactive Symptom Checker with Preliminary Triage Advice.
 
+## Databases Used
+
+**Disease and symptoms dataset 2023**: Comprising ~246,000 entries, this synthetically generated dataset maps 773 diseases to 377 symptoms. It retains symptom severity and disease prevalence likelihood, enabling analysis of symptom-disease correlations and diagnostic significance. 
+Source: Mendeley (https://data.mendeley.com/datasets/2cxccsxydc/1)
+
+**Symptom-Disease Prediction Dataset (SDPD)**: This curated dataset offers structured associations between symptoms and diseases, guided by methodologies from institutions like the CDC. It integrates clinical literature, expert consensus, and observational data to support predictive healthcare research. 
+Source: Mendeley (https://data.mendeley.com/datasets/dv5z3v2xyd/1)
+
 ## Technologies Used
 - **Sarvam AI Platform**: Utilized for its comprehensive suite of AI services for Indian languages, including:
     - **Speech-to-Text (STT)**: For converting user's voice input in various Indian languages into text. (Leveraging Sarvam AI's Saarika v2 STT or similar models).
