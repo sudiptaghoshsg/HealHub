@@ -58,7 +58,7 @@ class HealHubUtilities:
         cleaned = re.sub(r'\s+', ' ', text)
         return cleaned.strip()  # Remove leading/trailing spaces
 
-    def translate_text(self, text: str, target_lang: str, context: str = "healthcare") -> str:
+    def translate_text(self, text: str, target_lang: str) -> str:
         """
         Translate text to target language using Sarvam-M
         Args:
@@ -73,7 +73,6 @@ class HealHubUtilities:
         payload = {
             "input": text,
             "target_language_code": target_lang,
-            # "context": context,
             "source_language_code": 'auto',
             "mode": "formal",
             "model": "mayura:v1",
@@ -92,6 +91,38 @@ class HealHubUtilities:
         except Exception as e:
             print(f"Translation error: {e}")
             return text  # Fallback to original
+
+    def translate_text_to_english(self, text: str) -> str:
+        """
+        Translate text to target language using Sarvam-M
+        Args:
+            text: Text to translate
+            target_lang: Target language code (e.g., 'hi-IN')
+            context: Translation context (healthcare, general, etc.)
+        """
+        
+        headers = {"api-subscription-key": self.api_key}
+        payload = {
+            "input": text,
+            "target_language_code": 'en-IN',
+            "source_language_code": 'auto',
+            "mode": "formal",
+            "model": "mayura:v1",
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_api_url}/translate",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            return self.clean_whitespace(response.json()["translated_text"])
+        except Exception as e:
+            print(f"Translation error: {e}")
+            return text  # Fallback to original
+
 
     def batch_translate(self, texts: List[str], target_lang: str) -> List[str]:
         """Optimized batch translation for multiple texts"""

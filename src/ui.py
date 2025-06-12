@@ -85,6 +85,7 @@ def process_and_display_response(user_query_text: str, lang_code: str):
     nlu_processor = SarvamMNLUProcessor(api_key=SARVAM_API_KEY)
     response_gen = HealHubResponseGenerator(api_key=SARVAM_API_KEY)
     util = HealHubUtilities(api_key=SARVAM_API_KEY)
+    user_lang = st.session_state.current_language_code
     try:
         # User message is now added *before* calling this function for both text and voice.
         # So, this function should not add the user message again.
@@ -99,14 +100,13 @@ def process_and_display_response(user_query_text: str, lang_code: str):
                 if st.session_state.pending_symptom_question_data:
                     question_to_ask_raw = st.session_state.pending_symptom_question_data['question']
                     symptom_context_raw = st.session_state.pending_symptom_question_data['symptom_name']
-                    question_to_ask_translated = util.translate_text(question_to_ask_raw, user_lang)
+                    question_to_ask_translated = util.translate_text("Regarding "+question_to_ask_raw, user_lang)
                     symptom_context_translated = util.translate_text(symptom_context_raw, user_lang)
-                    add_message_to_conversation("assistant", f"Regarding {question_to_ask_translated}: {symptom_context_translated}")
+                    add_message_to_conversation("assistant", f"{question_to_ask_translated}: {symptom_context_translated}")
                 else:
                     generate_and_display_assessment()
             else:
                 bot_response = response_gen.generate_response(user_query_text, nlu_output)
-                user_lang = st.session_state.current_language_code
                 translated_bot_response = util.translate_text(bot_response, user_lang)
                 add_message_to_conversation("assistant", translated_bot_response)
                 st.session_state.symptom_checker_active = False
