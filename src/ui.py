@@ -100,7 +100,7 @@ def process_and_display_response(user_query_text: str, lang_code: str):
                 if st.session_state.pending_symptom_question_data:
                     question_to_ask_raw = st.session_state.pending_symptom_question_data['question']
                     symptom_context_raw = st.session_state.pending_symptom_question_data['symptom_name']
-                    question_to_ask_translated = util.translate_text("Regarding "+question_to_ask_raw, user_lang)
+                    question_to_ask_translated = util.translate_text(question_to_ask_raw, user_lang)
                     symptom_context_translated = util.translate_text(symptom_context_raw, user_lang)
                     add_message_to_conversation("assistant", f"{question_to_ask_translated}: {symptom_context_translated}")
                 else:
@@ -121,6 +121,8 @@ def process_and_display_response(user_query_text: str, lang_code: str):
         st.session_state.voice_input_stage = None # Always reset voice stage after processing or error
 
 def handle_follow_up_answer(answer_text: str):
+    util = HealHubUtilities(api_key=SARVAM_API_KEY)
+    user_lang = st.session_state.current_language_code
     if st.session_state.symptom_checker_instance and st.session_state.pending_symptom_question_data:
         # Add user's follow-up answer to conversation log
         add_message_to_conversation("user", answer_text, lang_code=st.session_state.current_language_code.split('-')[0])
@@ -131,9 +133,11 @@ def handle_follow_up_answer(answer_text: str):
             st.session_state.symptom_checker_instance.record_answer(symptom_name, question_asked, answer_text)
             st.session_state.pending_symptom_question_data = st.session_state.symptom_checker_instance.get_next_question()
         if st.session_state.pending_symptom_question_data:
-            question_to_ask = st.session_state.pending_symptom_question_data['question']
-            symptom_context = st.session_state.pending_symptom_question_data['symptom_name']
-            add_message_to_conversation("assistant", f"Regarding {symptom_context}: {question_to_ask}")
+            question_to_ask_raw = st.session_state.pending_symptom_question_data['question']
+            symptom_context_raw = st.session_state.pending_symptom_question_data['symptom_name']
+            question_to_ask_translated = util.translate_text(question_to_ask_raw, user_lang)
+            symptom_context_translated = util.translate_text(symptom_context_raw, user_lang)
+            add_message_to_conversation("assistant", f"{symptom_context_translated}: {question_to_ask_translated}")
         else:
             generate_and_display_assessment()
     else: 
