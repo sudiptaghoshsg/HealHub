@@ -6,6 +6,8 @@ import requests
 import numpy as np
 import re
 import base64
+from pydub import AudioSegment
+import io
 
 class HealHubUtilities:
     """Core utilities for HealHub healthcare application"""
@@ -152,9 +154,31 @@ class HealHubUtilities:
             # return response.json()['audios'][0]
             result = response.json()
             # Get the first audio string, decode from base64
-            audio_base64 = result["audios"][0]
-            audio_bytes = base64.b64decode(audio_base64)
-            return audio_bytes
+            # audio_base64 = result["audios"][0]
+            print(len(result["audios"]))
+            # audio_bytes = b''.join(base64.b64decode(audio_str) for audio_str in result["audios"])
+            # audio_bytes2 = base64.b64decode(audio_base64)
+            # if audio_bytes == audio_bytes:
+            segments = []
+            for b64_wav in result["audios"]:
+                # Decode base64 to bytes
+                audio_bytes = base64.b64decode(b64_wav)
+                
+                # Create in-memory file-like object
+                audio_file = io.BytesIO(audio_bytes)
+                
+                # Load audio segment
+                segment = AudioSegment.from_wav(audio_file)
+                segments.append(segment)
+
+            # Concatenate all segments
+            merged_audio = sum(segments[1:], segments[0])
+
+            # Export to bytes
+            output = io.BytesIO()
+            merged_audio.export(output, format="wav")
+            return output.getvalue()
+            # return audio_bytes
         except Exception as e:
             print(f"Translation error: {e}")
             return None
