@@ -89,7 +89,7 @@
     },
     {
       "symptom_name": "skin rash",
-      "keywords": ["rash", "hives", "itchy skin", "boils", "blisters", "khujli", "चकत्ते"],
+      "keywords": ["rash", "hives", "itchy skin", "boils", "blisters", "khujli"],
       "follow_up_questions": [
         "Where on your body is the rash located?",
         "What does the rash look like (e.g., red spots, bumps, blisters)? Is it itchy or painful?",
@@ -164,7 +164,7 @@
     },
     {
       "symptom_name": "body aches",
-      "keywords": ["muscle pain", "sore muscles", "badan dard", "全身酸痛", "aches and pains"],
+      "keywords": ["muscle pain", "sore muscles", "aches and pains"],
       "follow_up_questions": [
         "Where in your body are you experiencing the aches? Is it all over or in specific areas?",
         "How would you describe the pain - dull, sharp, throbbing?",
