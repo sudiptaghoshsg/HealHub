@@ -89,7 +89,7 @@
     },
     {
       "symptom_name": "skin rash",
-      "keywords": ["rash", "hives", "itchy skin", "boils", "blisters", "khujli"],
+      "keywords": ["rash", "hives", "itchy skin", "boils", "blisters"],
       "follow_up_questions": [
         "Where on your body is the rash located?",
         "What does the rash look like (e.g., red spots, bumps, blisters)? Is it itchy or painful?",
