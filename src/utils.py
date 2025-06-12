@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import requests
 import numpy as np
 import re
-
+import base64
 
 class HealHubUtilities:
     """Core utilities for HealHub healthcare application"""
@@ -123,7 +123,43 @@ class HealHubUtilities:
             print(f"Translation error: {e}")
             return text  # Fallback to original
 
+    def synthesize_speech(self, text, language_code):
+        """
+        Synthesize speech using Sarvam or another TTS API.
+        Returns audio bytes (e.g., MP3 or WAV).
+        """
+        
+        headers = {"api-subscription-key": self.api_key}
+        payload = {
+            "text": text,
+            "target_language_code": language_code,
+            "speaker": 'abhilash',
+            "pitch": 0,
+            "pace": 1.0,
+            "loudness": 1.0,
+            "speech_sample_rate": 22050,
+        }
 
+        try:
+            response = requests.post(
+                f"{self.base_api_url}/text-to-speech",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            # print(response.json())
+            response.raise_for_status()
+            # return response.json()['audios'][0]
+            result = response.json()
+            # Get the first audio string, decode from base64
+            audio_base64 = result["audios"][0]
+            audio_bytes = base64.b64decode(audio_base64)
+            return audio_bytes
+        except Exception as e:
+            print(f"Translation error: {e}")
+            return None
+
+        
     def batch_translate(self, texts: List[str], target_lang: str) -> List[str]:
         """Optimized batch translation for multiple texts"""
         if target_lang.startswith("en"):

@@ -255,15 +255,27 @@ def main_ui():
     st.markdown("### Conversation")
     chat_container = st.container(height=300) 
     with chat_container:
+        util = HealHubUtilities(api_key=SARVAM_API_KEY)
+        user_lang = st.session_state.current_language_code
+        idx = 0
         for msg_data in st.session_state.conversation:
+            idx += 1
             role = msg_data.get("role", "system"); content = msg_data.get("content", "")
             avatar = "🧑‍💻" if role == "user" else "⚕️"
             if role == "user":
                 with st.chat_message(role, avatar=avatar):
                     lang_display = msg_data.get('lang', st.session_state.current_language_code.split('-')[0])
                     st.markdown(f"{content} *({lang_display})*")
+            elif role == "assistant":
+                with st.chat_message(role, avatar=avatar): 
+                    st.markdown(content) 
+                    speak_key = f"speak_{idx}"
+                    if st.button("🔊 Speak", key=speak_key):
+                        with st.spinner("Synthesizing speech..."):
+                            audio_bytes = util.synthesize_speech(content, user_lang)
+                            st.audio(audio_bytes, format="audio/wav")
             else:
-                 with st.chat_message(role, avatar=avatar if role=="assistant" else "ℹ️"): st.markdown(content) 
+                with st.chat_message(role, avatar="ℹ️"): st.markdown(content)
 
     is_recording = st.session_state.voice_input_stage == "recording"
     
