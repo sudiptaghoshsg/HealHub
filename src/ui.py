@@ -13,6 +13,7 @@ try:
     from src.response_generator import HealHubResponseGenerator
     from src.symptom_checker import SymptomChecker
     from src.audio_capture import CleanAudioCapture, SarvamSTTIntegration # Import audio modules
+    from src.utils import HealHubUtilities
 except ImportError:
     import sys
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -20,6 +21,7 @@ except ImportError:
     from src.response_generator import HealHubResponseGenerator
     from src.symptom_checker import SymptomChecker
     from src.audio_capture import CleanAudioCapture, SarvamSTTIntegration
+    from src.utils import HealHubUtilities
 
 # --- Environment and API Key Setup ---
 load_dotenv()
@@ -82,6 +84,8 @@ def process_and_display_response(user_query_text: str, lang_code: str):
 
     nlu_processor = SarvamMNLUProcessor(api_key=SARVAM_API_KEY)
     response_gen = HealHubResponseGenerator(api_key=SARVAM_API_KEY)
+    util = HealHubUtilities(api_key=SARVAM_API_KEY)
+    user_lang = st.session_state.current_language_code
     try:
         # User message is now added *before* calling this function for both text and voice.
         # So, this function should not add the user message again.
@@ -94,14 +98,17 @@ def process_and_display_response(user_query_text: str, lang_code: str):
                 st.session_state.symptom_checker_instance.prepare_follow_up_questions()
                 st.session_state.pending_symptom_question_data = st.session_state.symptom_checker_instance.get_next_question()
                 if st.session_state.pending_symptom_question_data:
-                    question_to_ask = st.session_state.pending_symptom_question_data['question']
-                    symptom_context = st.session_state.pending_symptom_question_data['symptom_name']
-                    add_message_to_conversation("assistant", f"Regarding {symptom_context}: {question_to_ask}")
+                    question_to_ask_raw = st.session_state.pending_symptom_question_data['question']
+                    symptom_context_raw = st.session_state.pending_symptom_question_data['symptom_name']
+                    question_to_ask_translated = util.translate_text(question_to_ask_raw, user_lang)
+                    symptom_context_translated = util.translate_text(symptom_context_raw, user_lang)
+                    add_message_to_conversation("assistant", f"{question_to_ask_translated}: {symptom_context_translated}")
                 else:
                     generate_and_display_assessment()
             else:
                 bot_response = response_gen.generate_response(user_query_text, nlu_output)
-                add_message_to_conversation("assistant", bot_response)
+                translated_bot_response = util.translate_text(bot_response, user_lang)
+                add_message_to_conversation("assistant", translated_bot_response)
                 st.session_state.symptom_checker_active = False
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
@@ -114,6 +121,8 @@ def process_and_display_response(user_query_text: str, lang_code: str):
         st.session_state.voice_input_stage = None # Always reset voice stage after processing or error
 
 def handle_follow_up_answer(answer_text: str):
+    util = HealHubUtilities(api_key=SARVAM_API_KEY)
+    user_lang = st.session_state.current_language_code
     if st.session_state.symptom_checker_instance and st.session_state.pending_symptom_question_data:
         # Add user's follow-up answer to conversation log
         add_message_to_conversation("user", answer_text, lang_code=st.session_state.current_language_code.split('-')[0])
@@ -124,9 +133,11 @@ def handle_follow_up_answer(answer_text: str):
             st.session_state.symptom_checker_instance.record_answer(symptom_name, question_asked, answer_text)
             st.session_state.pending_symptom_question_data = st.session_state.symptom_checker_instance.get_next_question()
         if st.session_state.pending_symptom_question_data:
-            question_to_ask = st.session_state.pending_symptom_question_data['question']
-            symptom_context = st.session_state.pending_symptom_question_data['symptom_name']
-            add_message_to_conversation("assistant", f"Regarding {symptom_context}: {question_to_ask}")
+            question_to_ask_raw = st.session_state.pending_symptom_question_data['question']
+            symptom_context_raw = st.session_state.pending_symptom_question_data['symptom_name']
+            question_to_ask_translated = util.translate_text(question_to_ask_raw, user_lang)
+            symptom_context_translated = util.translate_text(symptom_context_raw, user_lang)
+            add_message_to_conversation("assistant", f"{symptom_context_translated}: {question_to_ask_translated}")
         else:
             generate_and_display_assessment()
     else: 
@@ -143,13 +154,13 @@ def handle_text_submission():
         return
 
     # Add the current user input to conversation log REGARDLESS of whether it's new or follow-up
-    add_message_to_conversation("user", user_input, lang_code=current_lang_code.split('-')[0])
-
+    
     if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data:
         # handle_follow_up_answer will process the answer.
         # It should NOT add the user message again as it's already added above.
         handle_follow_up_answer(user_input) 
     else: 
+        add_message_to_conversation("user", user_input, lang_code=current_lang_code.split('-')[0])
         if st.session_state.symptom_checker_active: # Reset if symptom checker was active but no pending q
              st.session_state.symptom_checker_active = False 
              st.session_state.symptom_checker_instance = None
@@ -163,17 +174,19 @@ def handle_text_submission():
     # If called from a non-button context that needs immediate UI update, rerun might be needed.
 
 def generate_and_display_assessment():
+    util = HealHubUtilities(api_key=SARVAM_API_KEY)
+    user_lang = st.session_state.current_language_code
     if st.session_state.symptom_checker_instance:
         with st.spinner("🔬 Generating preliminary assessment..."):
             assessment = st.session_state.symptom_checker_instance.generate_preliminary_assessment()
             try:
-                assessment_str = "### Preliminary Health Assessment:\n\n"
-                assessment_str += f"**Summary:** {assessment.get('assessment_summary', 'N/A')}\n\n"
-                assessment_str += f"**Suggested Severity:** {assessment.get('suggested_severity', 'N/A')}\n\n"
-                assessment_str += "**Recommended Next Steps:**\n"
+                assessment_str = f"### {util.translate_text('Preliminary Health Assessment', user_lang)}:\n\n"
+                assessment_str += f"**{util.translate_text('Summary', user_lang)}:** {util.translate_text(assessment.get('assessment_summary', 'N/A'), user_lang)}\n\n"
+                assessment_str += f"**{util.translate_text('Suggested Severity', user_lang)}:** {util.translate_text(assessment.get('suggested_severity', 'N/A'), user_lang)}\n\n"
+                assessment_str += f"**{util.translate_text('Recommended Next Steps', user_lang)}:**\n"
                 next_steps = assessment.get('recommended_next_steps', 'N/A')
                 if isinstance(next_steps, list): 
-                    for step in next_steps: assessment_str += f"- {step}\n"
+                    for step in next_steps: assessment_str += f"- {util.translate_text(step, user_lang)}\n"
                 elif isinstance(next_steps, str): # This is the block to modify
                     ### Replace the original problematic f-string line here
                     # Split on punctuation marks (., !, ?) followed by whitespace
@@ -183,17 +196,18 @@ def generate_and_display_assessment():
                     # remove leading bullet if present (e.g. if next_steps started with punctuation)
                     temp_steps = temp_steps.lstrip('- ')
                     # Append to assessment_str
-                    assessment_str += f"{temp_steps}\n"
-                else: assessment_str += "- N/A\n"
+                    assessment_str += f"{util.translate_text(temp_steps, user_lang)}\n"
+                else: 
+                    assessment_str += f"- {util.translate_text('N/A', user_lang)}\n"
                 warnings = assessment.get('potential_warnings')
                 if warnings and isinstance(warnings, list) and len(warnings) > 0 :
-                    assessment_str += "\n**Potential Warnings:**\n"
-                    for warning in warnings: assessment_str += f"- {warning}\n"
+                    assessment_str += f"\n**{util.translate_text('Potential Warnings', user_lang)}:**\n"
+                    for warning in warnings: assessment_str += f"- {util.translate_text(warning, user_lang)}\n"
                 kb_points = assessment.get('relevant_kb_triage_points')
                 if kb_points and isinstance(kb_points, list) and len(kb_points) > 0:
-                    assessment_str += "\n**Relevant Triage Points from Knowledge Base:**\n"
-                    for point in kb_points: assessment_str += f"- {point}\n"
-                assessment_str += f"\n\n**Disclaimer:** {assessment.get('disclaimer', 'Always consult a doctor for medical advice.')}"
+                    assessment_str += f"\n**{util.translate_text('Relevant Triage Points from Knowledge Base', user_lang)}:**\n"
+                    for point in kb_points: assessment_str += f"- {util.translate_text(point, user_lang)}\n"
+                assessment_str += f"\n\n**{util.translate_text('Disclaimer', user_lang)}:** {util.translate_text(assessment.get('disclaimer', 'Always consult a doctor for medical advice.'), user_lang)}"
                 add_message_to_conversation("assistant", assessment_str)
             except Exception as e:
                 st.error(f"Error formatting assessment: {e}")
@@ -245,15 +259,27 @@ def main_ui():
     st.markdown("### Conversation")
     chat_container = st.container(height=300) 
     with chat_container:
+        util = HealHubUtilities(api_key=SARVAM_API_KEY)
+        user_lang = st.session_state.current_language_code
+        idx = 0
         for msg_data in st.session_state.conversation:
+            idx += 1
             role = msg_data.get("role", "system"); content = msg_data.get("content", "")
             avatar = "🧑‍💻" if role == "user" else "⚕️"
             if role == "user":
                 with st.chat_message(role, avatar=avatar):
                     lang_display = msg_data.get('lang', st.session_state.current_language_code.split('-')[0])
                     st.markdown(f"{content} *({lang_display})*")
+            elif role == "assistant":
+                with st.chat_message(role, avatar=avatar): 
+                    st.markdown(content) 
+                    speak_key = f"speak_{idx}"
+                    if st.button("🔊 Speak", key=speak_key):
+                        with st.spinner("Synthesizing speech..."):
+                            audio_bytes = util.synthesize_speech(content, user_lang)
+                            st.audio(audio_bytes, format="audio/wav")
             else:
-                 with st.chat_message(role, avatar=avatar if role=="assistant" else "ℹ️"): st.markdown(content) 
+                with st.chat_message(role, avatar="ℹ️"): st.markdown(content)
 
     is_recording = st.session_state.voice_input_stage == "recording"
     

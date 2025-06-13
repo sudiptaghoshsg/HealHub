@@ -162,9 +162,7 @@ class CleanAudioCapture:
                     dtype=np.float32,
                     callback=self.audio_callback,
                     blocksize=1024,
-                    device=9  # Digital Microphone
                 )
-                print(f"Using Digital Microphone (device 9) at {self.sample_rate} Hz")
             except Exception as mic_error:
                 print(f"Failed to use Digital Microphone: {mic_error}")
                 print("Trying Stereo Microphone...")
