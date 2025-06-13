@@ -174,7 +174,6 @@ class SymptomChecker:
                 # If we have answers for this symptom, we might not need to ask initial follow-ups again.
                 # This logic might need refinement based on how conversations flow.
                 # For now, if any answer is recorded, skip re-adding its general follow-ups.
-                # print(f"ℹ️ Details already collected for {symptom_name_kb}, skipping its follow-up questions.")
                 continue
 
             for question_text in symptom_data.get("follow_up_questions", []):
