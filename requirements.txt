@@ -7,3 +7,4 @@ requests
 soundfile
 pydub
 SpeechRecognition
+ffmpeg-python
