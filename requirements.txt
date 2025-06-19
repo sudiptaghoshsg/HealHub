@@ -8,3 +8,4 @@ soundfile
 pydub
 streamlit_mic_recorder
 SpeechRecognition
+ffmpeg-python
