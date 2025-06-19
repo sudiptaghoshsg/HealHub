@@ -6,7 +6,7 @@ scipy
 requests
 soundfile
 pydub
-streamlit-mic-recorder
-SpeechRecognition
 ffmpeg-python
 pyaudio
+SpeechRecognition
+streamlit-mic-recorder
