@@ -6,4 +6,4 @@ scipy
 requests
 soundfile
 pydub
-streamlit-mic-recorder
+streamlit_mic_recorder
