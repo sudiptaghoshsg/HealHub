@@ -10,3 +10,12 @@ ffmpeg-python
 pyaudio
 SpeechRecognition
 streamlit-mic-recorder
+audioop-lts==0.2.1
+fuzzywuzzy==0.18.0
+pyaudio==0.2.14
+pydub==0.25.1
+speechrecognition==3.14.3
+standard-aifc==3.13.0
+standard-chunk==3.13.0
+streamlit-mic-recorder==0.0.8
+textdistance==4.6.3
