@@ -9,5 +9,4 @@ pydub
 ffmpeg-python
 pyaudio
 SpeechRecognition
-streamlit_mic_recorder
-streamlit-webrtc
+streamlit-mic-recorder
