@@ -1,3 +1,3 @@
 ffmpeg
 portaudio19-dev
-python3-all-dev
+libasound2-dev
